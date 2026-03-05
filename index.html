@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calorie Cam (MVP)</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Calorie Cam</h1>
+    <p class="sub">Take a food photo → get a rough calorie estimate.</p>
+
+    <section class="card">
+      <label class="btn">
+        Take / Choose Photo
+        <input id="photo" type="file" accept="image/*" capture="environment" />
+      </label>
+
+      <div id="preview" class="preview hidden">
+        <img id="img" alt="Preview" />
+      </div>
+
+      <button id="analyze" class="btn primary" disabled>Estimate Calories</button>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>Result</h2>
+      <pre id="result" class="result">(No result yet)</pre>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
