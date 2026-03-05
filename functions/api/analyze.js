@@ -11,7 +11,7 @@ export async function onRequestPost(context) {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    // Base64 encode (no Node Buffer in Cloudflare)
+    // Base64 encode (Cloudflare Workers/Pages doesn't use Node Buffer)
     let binary = "";
     const chunkSize = 0x8000;
     for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -22,16 +22,21 @@ export async function onRequestPost(context) {
     const contentType = file.type || "image/jpeg";
     const dataUrl = `data:${contentType};base64,${b64}`;
 
-    // Ask OpenAI to identify food + rough calories
+    // Prompt: ask for aggregated items (no duplicates)
     const prompt = `
 You are a nutrition assistant. From the photo, identify the food items.
+
 Return ONLY valid JSON with this schema:
 {
   "items": [{"name": string, "portion": string, "calories": number}],
   "totalCalories": number,
   "notes": string
 }
+
 Rules:
+- IMPORTANT: Do NOT repeat identical items. Aggregate them.
+  Example: instead of 5 separate "Banana" entries, return ONE item:
+  { "name": "Banana", "portion": "5 medium", "calories": 525 }
 - Be conservative and "rough estimate" is OK.
 - If unsure, say so in notes and make best guess.
 - totalCalories must equal sum of item calories.
