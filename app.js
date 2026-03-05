@@ -20,8 +20,11 @@ function showRaw(text) {
   resultEl.classList.remove("hidden");
 }
 
+function hideRaw() {
+  resultEl.classList.add("hidden");
+}
+
 function showPretty(data) {
-  // Validate expected shape
   const items = Array.isArray(data?.items) ? data.items : [];
   const total = Number.isFinite(data?.totalCalories) ? data.totalCalories : null;
   const notes = typeof data?.notes === "string" ? data.notes : "";
@@ -64,7 +67,7 @@ function showPretty(data) {
   notesEl.textContent = notes || "—";
 
   prettyEl.classList.remove("hidden");
-  // Keep raw JSON visible for now (we can hide later)
+  hideRaw(); // ✅ hide raw JSON for app-like look
 }
 
 photoEl.addEventListener("change", () => {
@@ -93,12 +96,9 @@ analyzeBtn.addEventListener("click", async () => {
     const resp = await fetch("/api/analyze", { method: "POST", body: fd });
     const data = await resp.json();
 
-    if (!resp.ok) {
-      throw new Error(data?.error || "Request failed");
-    }
+    if (!resp.ok) throw new Error(data?.error || "Request failed");
 
     statusEl.textContent = "Done.";
-    showRaw(JSON.stringify(data, null, 2));
     showPretty(data);
   } catch (err) {
     statusEl.textContent = "Error: " + err.message;
