@@ -48,7 +48,7 @@ Rules:
     const resp = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": \`Bearer \${apiKey}\`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -83,7 +83,6 @@ Rules:
     }
 
     return json(parsed, 200);
-
   } catch (e) {
     return json({ error: e?.message || "Server error" }, 500);
   }
