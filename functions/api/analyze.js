@@ -7,11 +7,9 @@ export async function onRequestPost(context) {
     const file = form.get("image");
     if (!file) return json({ error: "No image uploaded (field name must be 'image')." }, 400);
 
-    // Convert image to base64 data URL
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    // Base64 encode (Cloudflare Workers/Pages doesn't use Node Buffer)
     let binary = "";
     const chunkSize = 0x8000;
     for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -22,24 +20,37 @@ export async function onRequestPost(context) {
     const contentType = file.type || "image/jpeg";
     const dataUrl = `data:${contentType};base64,${b64}`;
 
-    // Prompt: ask for aggregated items (no duplicates)
     const prompt = `
 You are a nutrition assistant. From the photo, identify the food items.
 
 Return ONLY valid JSON with this schema:
 {
-  "items": [{"name": string, "portion": string, "calories": number}],
+  "items": [
+    {
+      "name": string,
+      "portion": string,
+      "calories": number,
+      "protein": number,
+      "fat": number,
+      "carbs": number
+    }
+  ],
   "totalCalories": number,
+  "totalProtein": number,
+  "totalFat": number,
+  "totalCarbs": number,
   "notes": string
 }
 
 Rules:
 - IMPORTANT: Do NOT repeat identical items. Aggregate them.
-  Example: instead of 5 separate "Banana" entries, return ONE item:
-  { "name": "Banana", "portion": "5 medium", "calories": 525 }
-- Be conservative and "rough estimate" is OK.
-- If unsure, say so in notes and make best guess.
-- totalCalories must equal sum of item calories.
+- Be conservative. Rough estimates are OK.
+- protein, fat, carbs must be in grams.
+- totalCalories must equal the sum of item calories.
+- totalProtein must equal the sum of item protein.
+- totalFat must equal the sum of item fat.
+- totalCarbs must equal the sum of item carbs.
+- If unsure, mention uncertainty in notes and still make your best estimate.
 `;
 
     const resp = await fetch("https://api.openai.com/v1/responses", {
@@ -67,18 +78,15 @@ Rules:
       return json({ error: "OpenAI error", details: raw }, 502);
     }
 
-    // Extract text output from Responses API
     const text =
       raw.output?.[0]?.content?.find(c => c.type === "output_text")?.text
       ?? raw.output_text
       ?? "";
 
-    // Parse JSON from model
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch {
-      // If the model returned extra text, try to salvage JSON
       const start = text.indexOf("{");
       const end = text.lastIndexOf("}");
       if (start >= 0 && end > start) {
