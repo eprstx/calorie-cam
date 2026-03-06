@@ -45,6 +45,15 @@ function parseQuantityFromPortion(portion) {
   return Number.isFinite(qty) && qty > 0 ? qty : 1;
 }
 
+function makeFieldLabel(text) {
+  const label = document.createElement("div");
+  label.textContent = text;
+  label.style.fontSize = "13px";
+  label.style.opacity = "0.85";
+  label.style.marginBottom = "6px";
+  return label;
+}
+
 function renderReadOnlyItems() {
   itemsEl.innerHTML = "";
 
@@ -80,50 +89,70 @@ function renderReadOnlyItems() {
 function renderEditableItems() {
   itemsEl.innerHTML = "";
 
+  const intro = document.createElement("div");
+  intro.className = "notes";
+  intro.style.marginBottom = "12px";
+  intro.textContent = "Edit any item below. You can type calories manually or tap AI to estimate one item.";
+  itemsEl.appendChild(intro);
+
   itemsData.forEach((item, index) => {
     const wrap = document.createElement("div");
     wrap.className = "item";
     wrap.style.display = "block";
 
+    const nameWrap = document.createElement("div");
+    nameWrap.style.marginBottom = "10px";
+    nameWrap.appendChild(makeFieldLabel("Item name"));
+
     const nameInput = document.createElement("input");
     nameInput.className = "input";
-    nameInput.placeholder = "Item name";
+    nameInput.placeholder = "e.g. Costco Chicken Bake";
     nameInput.value = item.name || "";
-    nameInput.style.marginBottom = "8px";
     nameInput.oninput = () => {
       itemsData[index].name = nameInput.value;
     };
+    nameWrap.appendChild(nameInput);
+
+    const portionWrap = document.createElement("div");
+    portionWrap.style.marginBottom = "10px";
+    portionWrap.appendChild(makeFieldLabel("Portion / quantity"));
 
     const portionInput = document.createElement("input");
     portionInput.className = "input";
-    portionInput.placeholder = "Portion / quantity (e.g. 2 pieces)";
+    portionInput.placeholder = "e.g. 2 pieces";
     portionInput.value = item.portion || "";
-    portionInput.style.marginBottom = "8px";
     portionInput.oninput = () => {
       itemsData[index].portion = portionInput.value;
     };
+    portionWrap.appendChild(portionInput);
 
     const row2 = document.createElement("div");
     row2.style.display = "flex";
     row2.style.gap = "8px";
     row2.style.flexWrap = "wrap";
-    row2.style.alignItems = "center";
+    row2.style.alignItems = "end";
+
+    const calWrap = document.createElement("div");
+    calWrap.style.minWidth = "120px";
+    calWrap.appendChild(makeFieldLabel("Calories (manual)"));
 
     const calInput = document.createElement("input");
     calInput.className = "input";
     calInput.type = "number";
     calInput.min = "0";
     calInput.step = "1";
+    calInput.placeholder = "0";
     calInput.value = String(item.calories ?? 0);
-    calInput.style.width = "110px";
+    calInput.style.width = "120px";
     calInput.oninput = () => {
       itemsData[index].calories = Number(calInput.value) || 0;
       calcTotal();
     };
+    calWrap.appendChild(calInput);
 
     const aiBtn = document.createElement("button");
     aiBtn.className = "btn";
-    aiBtn.textContent = "AI";
+    aiBtn.textContent = "AI estimate";
     aiBtn.onclick = async () => {
       const name = String(itemsData[index].name || "").trim();
       const portion = String(itemsData[index].portion || "").trim();
@@ -169,7 +198,7 @@ function renderEditableItems() {
 
         calcTotal();
         renderEditableItems();
-        setStatus(`Updated "${itemsData[index].name}".`);
+        setStatus(`Updated "${itemsData[index].name}" with AI.`);
       } catch (err) {
         setStatus("Error: " + err.message);
         aiBtn.disabled = false;
@@ -186,13 +215,20 @@ function renderEditableItems() {
       setStatus("Item deleted.");
     };
 
-    row2.appendChild(calInput);
+    row2.appendChild(calWrap);
     row2.appendChild(aiBtn);
     row2.appendChild(delBtn);
 
-    wrap.appendChild(nameInput);
-    wrap.appendChild(portionInput);
+    const help = document.createElement("div");
+    help.style.fontSize = "13px";
+    help.style.opacity = "0.75";
+    help.style.marginTop = "8px";
+    help.textContent = "Type calories yourself, or use AI estimate for this item.";
+
+    wrap.appendChild(nameWrap);
+    wrap.appendChild(portionWrap);
     wrap.appendChild(row2);
+    wrap.appendChild(help);
 
     itemsEl.appendChild(wrap);
   });
@@ -219,7 +255,7 @@ function renderEditableItems() {
 
   const totalBtn = document.createElement("button");
   totalBtn.className = "btn primary";
-  totalBtn.textContent = "Recalculate Total";
+  totalBtn.textContent = "Update total";
   totalBtn.onclick = () => {
     calcTotal();
     notesEl.textContent = notesText || "—";
