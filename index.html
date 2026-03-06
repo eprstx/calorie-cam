@@ -10,7 +10,7 @@
   <main class="wrap">
     <h1>Food Snap</h1>
     <p class="sub">Take a food photo → get a rough calorie estimate.</p>
-    <p class="sub"><strong>Version: v3</strong></p>
+    <p class="sub"><strong>Version: v4</strong></p>
 
     <section class="card">
       <label class="btn">
@@ -33,10 +33,30 @@
       </div>
 
       <div id="pretty" class="pretty hidden">
-        <div class="total">
-          <div class="total-label">Total</div>
-          <div id="totalCalories" class="total-value">—</div>
-          <div class="total-unit">cal</div>
+        <div class="totals-grid">
+          <div class="total">
+            <div class="total-label">Calories</div>
+            <div id="totalCalories" class="total-value">—</div>
+            <div class="total-unit">cal</div>
+          </div>
+
+          <div class="total">
+            <div class="total-label">Protein</div>
+            <div id="totalProtein" class="total-value">—</div>
+            <div class="total-unit">g</div>
+          </div>
+
+          <div class="total">
+            <div class="total-label">Fat</div>
+            <div id="totalFat" class="total-value">—</div>
+            <div class="total-unit">g</div>
+          </div>
+
+          <div class="total">
+            <div class="total-label">Carbs</div>
+            <div id="totalCarbs" class="total-value">—</div>
+            <div class="total-unit">g</div>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -54,6 +74,6 @@
     </section>
   </main>
 
-  <script src="/app.js?v=3"></script>
+  <script src="/app.js?v=4"></script>
 </body>
 </html>
