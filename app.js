@@ -31,16 +31,10 @@ function calcTotals() {
   let carbs = 0;
 
   for (const item of itemsData) {
-
-    const c = Number(item.calories);
-    const p = Number(item.protein);
-    const f = Number(item.fat);
-    const cb = Number(item.carbs);
-
-    if (Number.isFinite(c)) calories += c;
-    if (Number.isFinite(p)) protein += p;
-    if (Number.isFinite(f)) fat += f;
-    if (Number.isFinite(cb)) carbs += cb;
+    calories += Number(item.calories) || 0;
+    protein += Number(item.protein) || 0;
+    fat += Number(item.fat) || 0;
+    carbs += Number(item.carbs) || 0;
   }
 
   totalCaloriesEl.textContent = Math.round(calories);
@@ -49,44 +43,70 @@ function calcTotals() {
   totalCarbsEl.textContent = Math.round(carbs);
 }
 
-function renderReadOnlyItems() {
+function renderItems() {
 
   itemsEl.innerHTML = "";
 
-  for (const item of itemsData) {
+  itemsData.forEach((item, index) => {
 
     const row = document.createElement("div");
     row.className = "item";
 
-    const name = document.createElement("div");
-    name.className = "item-name";
-    name.textContent = item.name || "Item";
+    const nameInput = document.createElement("input");
+    nameInput.className = "input";
+    nameInput.value = item.name;
+    nameInput.placeholder = "Food name";
+    nameInput.oninput = () => itemsData[index].name = nameInput.value;
 
-    const portion = document.createElement("div");
-    portion.className = "item-portion";
-    portion.textContent = item.portion || "";
+    const portionInput = document.createElement("input");
+    portionInput.className = "input";
+    portionInput.value = item.portion;
+    portionInput.placeholder = "Portion / quantity";
+    portionInput.oninput = () => itemsData[index].portion = portionInput.value;
 
-    const macros = document.createElement("div");
-    macros.style.opacity = "0.85";
-    macros.style.fontSize = "13px";
-    macros.style.marginTop = "6px";
+    const macroRow = document.createElement("div");
+    macroRow.style.display = "flex";
+    macroRow.style.gap = "6px";
+    macroRow.style.marginTop = "8px";
+    macroRow.style.flexWrap = "wrap";
 
-    macros.textContent =
-      `${Math.round(item.calories || 0)} cal • ` +
-      `P ${Math.round(item.protein || 0)}g • ` +
-      `F ${Math.round(item.fat || 0)}g • ` +
-      `C ${Math.round(item.carbs || 0)}g`;
+    function makeInput(label, field) {
 
-    row.appendChild(name);
-    row.appendChild(portion);
-    row.appendChild(macros);
+      const wrap = document.createElement("div");
+
+      const lab = document.createElement("div");
+      lab.textContent = label;
+      lab.style.fontSize = "12px";
+      lab.style.opacity = "0.8";
+
+      const input = document.createElement("input");
+      input.className = "input";
+      input.type = "number";
+      input.style.width = "70px";
+      input.value = item[field];
+      input.oninput = () => {
+        itemsData[index][field] = Number(input.value) || 0;
+        calcTotals();
+      };
+
+      wrap.appendChild(lab);
+      wrap.appendChild(input);
+
+      return wrap;
+    }
+
+    macroRow.appendChild(makeInput("Cal", "calories"));
+    macroRow.appendChild(makeInput("Protein", "protein"));
+    macroRow.appendChild(makeInput("Fat", "fat"));
+    macroRow.appendChild(makeInput("Carbs", "carbs"));
+
+    row.appendChild(nameInput);
+    row.appendChild(portionInput);
+    row.appendChild(macroRow);
 
     itemsEl.appendChild(row);
-  }
-}
+  });
 
-function renderCurrentMode() {
-  renderReadOnlyItems();
   calcTotals();
 }
 
@@ -102,6 +122,7 @@ photoEl.addEventListener("change", () => {
 
   analyzeBtn.disabled = false;
   editBtn.disabled = true;
+
   prettyEl.classList.add("hidden");
 
   setStatus("");
@@ -112,7 +133,6 @@ analyzeBtn.addEventListener("click", async () => {
   if (!currentFile) return;
 
   analyzeBtn.disabled = true;
-  editBtn.disabled = true;
 
   setStatus("Analyzing...");
 
@@ -130,14 +150,7 @@ analyzeBtn.addEventListener("click", async () => {
 
     if (!resp.ok) throw new Error(data?.error || "Analyze failed");
 
-    itemsData = Array.isArray(data.items) ? data.items.map(item => ({
-      name: item.name || "",
-      portion: item.portion || "",
-      calories: Number(item.calories) || 0,
-      protein: Number(item.protein) || 0,
-      fat: Number(item.fat) || 0,
-      carbs: Number(item.carbs) || 0
-    })) : [];
+    itemsData = data.items || [];
 
     notesText = data.notes || "";
     notesEl.textContent = notesText || "—";
@@ -145,7 +158,7 @@ analyzeBtn.addEventListener("click", async () => {
     prettyEl.classList.remove("hidden");
     editBtn.disabled = false;
 
-    renderCurrentMode();
+    renderItems();
 
     setStatus("Done.");
 
