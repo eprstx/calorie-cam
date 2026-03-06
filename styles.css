@@ -5,6 +5,9 @@ h1 { margin: 6px 0 0; font-size: 28px; }
 .sub { margin: 6px 0 18px; opacity: .8; }
 
 .card { background: #14161c; border: 1px solid #262a35; border-radius: 14px; padding: 16px; margin: 14px 0; }
+
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
 .btn { display: inline-block; border-radius: 12px; padding: 12px 14px; border: 1px solid #2c3242; background: #1b2030; color: #fff; cursor: pointer; }
 .btn.primary { background: #2a57ff; border-color: #2a57ff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -35,3 +38,19 @@ input[type="file"] { display: none; }
 .item-cal { font-weight: 700; white-space: nowrap; }
 
 .notes { padding: 10px 12px; background: #0f1117; border: 1px solid #262a35; border-radius: 12px; opacity: .9; }
+
+/* Edit panel */
+.edit { margin-top: 10px; }
+.field { display: block; margin: 10px 0; }
+.field-label { font-size: 13px; opacity: .85; margin-bottom: 6px; }
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0f1117;
+  border: 1px solid #262a35;
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px;
+  font-size: 16px;
+}
+.hint { margin: 8px 0 0; font-size: 13px; opacity: .75; }
