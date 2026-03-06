@@ -4,200 +4,147 @@ const previewEl = document.getElementById("preview");
 const analyzeBtn = document.getElementById("analyze");
 const statusEl = document.getElementById("status");
 
-// Pretty UI elements
 const prettyEl = document.getElementById("pretty");
 const totalCaloriesEl = document.getElementById("totalCalories");
 const itemsEl = document.getElementById("items");
 const notesEl = document.getElementById("notes");
 
-// Edit UI
 const editBtn = document.getElementById("editBtn");
-const editPanel = document.getElementById("editPanel");
-const editName = document.getElementById("editName");
-const editQty = document.getElementById("editQty");
-const recalcBtn = document.getElementById("recalcBtn");
-
-// Raw JSON fallback (kept hidden)
-const resultEl = document.getElementById("result");
 
 let currentFile = null;
-let lastResult = null;
+let itemsData = [];
 
 function setStatus(text) {
   statusEl.textContent = text || "";
 }
 
-function renderPretty(data) {
-  const items = Array.isArray(data?.items) ? data.items : [];
-  const total = Number.isFinite(data?.totalCalories) ? data.totalCalories : null;
-  const notes = typeof data?.notes === "string" ? data.notes : "";
+function calcTotal() {
+  let total = 0;
+  itemsData.forEach(i => {
+    const c = Number(i.calories);
+    if (!isNaN(c)) total += c;
+  });
+  totalCaloriesEl.textContent = Math.round(total);
+}
 
-  totalCaloriesEl.textContent = total !== null ? String(Math.round(total)) : "—";
-
+function renderItems() {
   itemsEl.innerHTML = "";
-  for (const it of items) {
-    const name = (it?.name ?? "").toString();
-    const portion = (it?.portion ?? "").toString();
-    const calories = Number(it?.calories);
 
-    const li = document.createElement("li");
-    li.className = "item";
+  itemsData.forEach((item, index) => {
+
+    const row = document.createElement("div");
+    row.className = "item";
 
     const left = document.createElement("div");
     left.className = "item-left";
 
-    const nameEl = document.createElement("div");
-    nameEl.className = "item-name";
-    nameEl.textContent = name || "Item";
+    const nameInput = document.createElement("input");
+    nameInput.value = item.name;
+    nameInput.className = "input";
+    nameInput.oninput = () => {
+      itemsData[index].name = nameInput.value;
+    };
 
-    const portionEl = document.createElement("div");
-    portionEl.className = "item-portion";
-    portionEl.textContent = portion || "";
+    const portionInput = document.createElement("input");
+    portionInput.value = item.portion;
+    portionInput.className = "input";
+    portionInput.oninput = () => {
+      itemsData[index].portion = portionInput.value;
+    };
 
-    left.appendChild(nameEl);
-    if (portion) left.appendChild(portionEl);
+    left.appendChild(nameInput);
+    left.appendChild(portionInput);
 
-    const calEl = document.createElement("div");
-    calEl.className = "item-cal";
-    calEl.textContent = Number.isFinite(calories) ? `${Math.round(calories)} cal` : "—";
+    const right = document.createElement("div");
 
-    li.appendChild(left);
-    li.appendChild(calEl);
+    const calInput = document.createElement("input");
+    calInput.value = item.calories;
+    calInput.className = "input";
+    calInput.style.width = "80px";
+    calInput.oninput = () => {
+      itemsData[index].calories = Number(calInput.value);
+      calcTotal();
+    };
 
-    itemsEl.appendChild(li);
-  }
+    const aiBtn = document.createElement("button");
+    aiBtn.textContent = "AI";
+    aiBtn.className = "btn";
+    aiBtn.onclick = () => {
+      alert("AI recalc will be added next step");
+    };
 
-  notesEl.textContent = notes || "—";
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.className = "btn";
+    delBtn.onclick = () => {
+      itemsData.splice(index, 1);
+      renderItems();
+      calcTotal();
+    };
 
-  prettyEl.classList.remove("hidden");
-  resultEl.classList.add("hidden");
-}
+    right.appendChild(calInput);
+    right.appendChild(aiBtn);
+    right.appendChild(delBtn);
 
-function guessMainItemName(items) {
-  if (!Array.isArray(items) || items.length === 0) return "";
-  // Pick the highest-calorie item as "main"
-  let best = items[0];
-  for (const it of items) {
-    if (Number(it?.calories) > Number(best?.calories)) best = it;
-  }
-  return (best?.name ?? "").toString();
-}
+    row.appendChild(left);
+    row.appendChild(right);
 
-function openEditPanel() {
-  if (!lastResult) return;
+    itemsEl.appendChild(row);
+  });
 
-  // Prefill name from the "main" item; qty defaults to 1
-  editName.value = guessMainItemName(lastResult.items) || "";
-  editQty.value = "1";
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "+ Add item";
+  addBtn.className = "btn";
 
-  editPanel.classList.remove("hidden");
-}
+  addBtn.onclick = () => {
+    itemsData.push({
+      name: "New item",
+      portion: "",
+      calories: 0
+    });
+    renderItems();
+  };
 
-function closeEditPanel() {
-  editPanel.classList.add("hidden");
+  itemsEl.appendChild(addBtn);
 }
 
 photoEl.addEventListener("change", () => {
+
   const file = photoEl.files?.[0];
   if (!file) return;
 
   currentFile = file;
-  lastResult = null;
 
   imgEl.src = URL.createObjectURL(file);
   previewEl.classList.remove("hidden");
 
   analyzeBtn.disabled = false;
-  editBtn.disabled = true;
-  closeEditPanel();
 
   setStatus("");
-  prettyEl.classList.add("hidden");
-  resultEl.classList.add("hidden");
-});
-
-editBtn.addEventListener("click", () => {
-  if (editPanel.classList.contains("hidden")) openEditPanel();
-  else closeEditPanel();
 });
 
 analyzeBtn.addEventListener("click", async () => {
-  if (!currentFile) return;
 
-  analyzeBtn.disabled = true;
-  editBtn.disabled = true;
-  closeEditPanel();
-  setStatus("Uploading photo…");
+  const fd = new FormData();
+  fd.append("image", currentFile);
 
-  try {
-    const fd = new FormData();
-    fd.append("image", currentFile);
+  setStatus("Analyzing...");
 
-    const resp = await fetch("/api/analyze", { method: "POST", body: fd });
-    const data = await resp.json();
+  const resp = await fetch("/api/analyze", {
+    method: "POST",
+    body: fd
+  });
 
-    if (!resp.ok) throw new Error(data?.error || "Request failed");
+  const data = await resp.json();
 
-    lastResult = data;
-    renderPretty(data);
+  itemsData = data.items || [];
 
-    editBtn.disabled = false;
-    setStatus("Done.");
-  } catch (err) {
-    setStatus("Error: " + err.message);
-    prettyEl.classList.add("hidden");
-  } finally {
-    analyzeBtn.disabled = false;
-  }
-});
+  prettyEl.classList.remove("hidden");
 
-recalcBtn.addEventListener("click", async () => {
-  if (!lastResult) return;
+  renderItems();
+  calcTotal();
 
-  const name = (editName.value || "").trim();
-  const qty = Number(editQty.value);
+  notesEl.textContent = data.notes || "";
 
-  if (!name) {
-    setStatus("Please enter an item name.");
-    return;
-  }
-  if (!Number.isFinite(qty) || qty < 1) {
-    setStatus("Quantity must be 1 or more.");
-    return;
-  }
-
-  recalcBtn.disabled = true;
-  analyzeBtn.disabled = true;
-  editBtn.disabled = true;
-  setStatus("Recalculating…");
-
-  try {
-    const resp = await fetch("/api/recalc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        quantity: qty,
-        // Send original result as context (helps the model refine)
-        original: lastResult
-      })
-    });
-
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data?.error || "Recalc failed");
-
-    lastResult = data;
-    renderPretty(data);
-
-    setStatus("Updated.");
-    // keep edit panel open so they can tweak again
-    editBtn.disabled = false;
-    recalcBtn.disabled = false;
-  } catch (err) {
-    setStatus("Error: " + err.message);
-    recalcBtn.disabled = false;
-    editBtn.disabled = false;
-  } finally {
-    analyzeBtn.disabled = false;
-  }
+  setStatus("Done");
 });
