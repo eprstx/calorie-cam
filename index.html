@@ -26,9 +26,11 @@
     </section>
 
     <section class="card">
-      <h2>Result</h2>
+      <div class="row-between">
+        <h2 style="margin:0;">Result</h2>
+        <button id="editBtn" class="btn" disabled>Edit</button>
+      </div>
 
-      <!-- Friendly UI -->
       <div id="pretty" class="pretty hidden">
         <div class="total">
           <div class="total-label">Total</div>
@@ -41,14 +43,32 @@
         <div class="items-head">Items</div>
         <ul id="items" class="items"></ul>
 
+        <!-- Edit panel (Option A: edit single main item + qty) -->
+        <div id="editPanel" class="edit hidden">
+          <div class="divider"></div>
+          <div class="items-head">Edit & Recalculate</div>
+
+          <label class="field">
+            <div class="field-label">Item name</div>
+            <input id="editName" class="input" placeholder="e.g., Costco Chicken Bake" />
+          </label>
+
+          <label class="field">
+            <div class="field-label">Quantity</div>
+            <input id="editQty" class="input" type="number" min="1" step="1" value="1" />
+          </label>
+
+          <button id="recalcBtn" class="btn primary">Recalculate</button>
+          <p class="hint">Tip: change name + quantity, then Recalculate.</p>
+        </div>
+
         <div class="divider"></div>
 
         <div class="items-head">Notes</div>
         <div id="notes" class="notes"></div>
       </div>
 
-      <!-- Fallback JSON (we’ll hide this after we confirm the pretty UI works) -->
-      <pre id="result" class="result">(No result yet)</pre>
+      <pre id="result" class="result hidden">(Hidden)</pre>
     </section>
   </main>
 
