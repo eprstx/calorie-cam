@@ -10,42 +10,57 @@ export async function onRequestPost(context) {
     if (!name) return json({ error: "Missing 'name'." }, 400);
     if (!Number.isFinite(quantity) || quantity < 1) return json({ error: "Invalid 'quantity'." }, 400);
 
-    const original = body?.original ?? null;
-
     const prompt = `
 You are a nutrition assistant.
 
-User correction:
-- Item: ${name}
+User item:
+- Name: ${name}
 - Quantity: ${quantity}
 
-You will output ONLY valid JSON with this schema:
+Return ONLY valid JSON using this schema:
+
 {
-  "items": [{"name": string, "portion": string, "calories": number}],
+  "items": [
+    {
+      "name": string,
+      "portion": string,
+      "calories": number,
+      "protein": number,
+      "fat": number,
+      "carbs": number
+    }
+  ],
   "totalCalories": number,
+  "totalProtein": number,
+  "totalFat": number,
+  "totalCarbs": number,
   "notes": string
 }
 
 Rules:
-- Return ONE aggregated item (do not repeat).
-- Use the user's item name exactly (or very close, preserving brand like Costco if provided).
-- Portion should reflect the quantity, e.g. "2 servings" or "2 items".
-- Calories should be a reasonable rough estimate for that item and quantity.
-- totalCalories must equal sum of item calories.
-- If the item is ambiguous, mention it in notes and pick a reasonable estimate.
-
-Context (original model output, may be wrong): ${JSON.stringify(original)}
+- Return ONE aggregated item only.
+- Portion should reflect the quantity (example: "2 pieces", "3 servings").
+- Protein, fat, carbs must be grams.
+- totals must equal the item values since only one item exists.
+- Rough estimates are acceptable.
 `;
 
     const resp = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": \`Bearer \${apiKey}\`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
-        input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }]
+        input: [
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: prompt }
+            ]
+          }
+        ]
       })
     });
 
@@ -68,6 +83,7 @@ Context (original model output, may be wrong): ${JSON.stringify(original)}
     }
 
     return json(parsed, 200);
+
   } catch (e) {
     return json({ error: e?.message || "Server error" }, 500);
   }
