@@ -1,93 +1,20 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Food Snap</title>
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
-  <main class="wrap">
-    <h1>Food Snap</h1>
-    <p class="sub">Take a food photo → get a rough calorie estimate.</p>
-    <p class="sub"><strong>Version: v6</strong></p>
+<section class="card">
 
-    <section class="card">
-      <label class="btn">
-        Take / Choose Photo
-        <input id="photo" type="file" accept="image/*" capture="environment" />
-      </label>
+<label class="btn">
+Take / Choose Photo
+<input id="photo" type="file" accept="image/*" capture="environment" />
+</label>
 
-      <div id="preview" class="preview hidden">
-        <img id="img" alt="Preview" />
-      </div>
+<div id="preview" class="preview hidden">
+<img id="img" alt="Preview" />
 
-      <button id="analyze" class="btn primary" disabled>Estimate Calories</button>
-      <p id="status" class="status"></p>
-    </section>
+<div class="photo-actions">
+<button id="confirmPhoto" class="btn primary">Use this photo</button>
+<button id="retakePhoto" class="btn">Choose another</button>
+</div>
 
-    <section class="card">
-      <div class="row-between">
-        <h2 style="margin:0;">Result</h2>
-        <button id="editBtn" class="btn" disabled>Editing</button>
-      </div>
+</div>
 
-      <div id="pretty" class="pretty hidden">
-        <div class="totals-grid">
-          <div class="total">
-            <div class="total-label">Calories</div>
-            <div id="totalCalories" class="total-value">—</div>
-            <div class="total-unit">cal</div>
-          </div>
+<p id="status" class="status"></p>
 
-          <div class="total">
-            <div class="total-label">Protein</div>
-            <div id="totalProtein" class="total-value">—</div>
-            <div class="total-unit">g</div>
-          </div>
-
-          <div class="total">
-            <div class="total-label">Fat</div>
-            <div id="totalFat" class="total-value">—</div>
-            <div class="total-unit">g</div>
-          </div>
-
-          <div class="total">
-            <div class="total-label">Carbs</div>
-            <div id="totalCarbs" class="total-value">—</div>
-            <div class="total-unit">g</div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="items-head">Meal name</div>
-        <input id="mealName" class="input" placeholder="e.g. Afternoon snack" />
-
-        <div class="divider"></div>
-
-        <div class="items-head">Items</div>
-        <div id="items" class="items"></div>
-
-        <div class="divider"></div>
-
-        <div class="items-head">Water (optional)</div>
-        <input id="waterInput" class="input" type="number" min="0" step="0.1" value="0" placeholder="Water amount" />
-
-        <div class="divider"></div>
-
-        <div class="items-head">Notes</div>
-        <div id="notes" class="notes"></div>
-
-        <div class="divider"></div>
-
-        <button id="saveMealBtn" class="btn primary">Save Meal</button>
-      </div>
-
-      <pre id="result" class="result hidden">(Hidden)</pre>
-    </section>
-  </main>
-
-  <script src="/app.js?v=6"></script>
-</body>
-</html>
+</section>
