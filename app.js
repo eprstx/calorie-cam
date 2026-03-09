@@ -21,9 +21,22 @@ const saveMealBtn = document.getElementById("saveMealBtn");
 let currentFile = null;
 let itemsData = [];
 let notesText = "";
+let isSaved = false;
 
 function setStatus(text) {
   statusEl.textContent = text || "";
+}
+
+function markUnsaved() {
+  isSaved = false;
+  saveMealBtn.disabled = false;
+  saveMealBtn.textContent = "Save Meal";
+}
+
+function markSaved() {
+  isSaved = true;
+  saveMealBtn.disabled = true;
+  saveMealBtn.textContent = "Saved";
 }
 
 function getTotals() {
@@ -68,6 +81,7 @@ function renderItems() {
     nameInput.placeholder = "Food name";
     nameInput.oninput = () => {
       itemsData[index].name = nameInput.value;
+      markUnsaved();
     };
 
     const portionInput = document.createElement("input");
@@ -76,6 +90,7 @@ function renderItems() {
     portionInput.placeholder = "Portion / quantity";
     portionInput.oninput = () => {
       itemsData[index].portion = portionInput.value;
+      markUnsaved();
     };
 
     const macroRow = document.createElement("div");
@@ -100,6 +115,7 @@ function renderItems() {
       input.oninput = () => {
         itemsData[index][field] = Number(input.value) || 0;
         renderTotals();
+        markUnsaved();
       };
 
       wrap.appendChild(lab);
@@ -133,7 +149,11 @@ photoEl.addEventListener("change", () => {
   analyzeBtn.disabled = false;
   prettyEl.classList.add("hidden");
   setStatus("");
+  markUnsaved();
 });
+
+mealNameEl.addEventListener("input", markUnsaved);
+waterInputEl.addEventListener("input", markUnsaved);
 
 analyzeBtn.addEventListener("click", async () => {
   if (!currentFile) return;
@@ -167,6 +187,7 @@ analyzeBtn.addEventListener("click", async () => {
 
     prettyEl.classList.remove("hidden");
     renderItems();
+    markUnsaved();
 
     setStatus("Done.");
   } catch (err) {
@@ -177,10 +198,14 @@ analyzeBtn.addEventListener("click", async () => {
 });
 
 saveMealBtn.addEventListener("click", async () => {
+  if (isSaved) return;
+
   const meal_name = (mealNameEl.value || "").trim() || "Untitled meal";
   const water = Number(waterInputEl.value) || 0;
   const totals = getTotals();
 
+  saveMealBtn.disabled = true;
+  saveMealBtn.textContent = "Saving...";
   setStatus("Saving meal...");
 
   try {
@@ -205,8 +230,11 @@ saveMealBtn.addEventListener("click", async () => {
     const data = await resp.json();
     if (!resp.ok) throw new Error(data?.error || "Save failed");
 
-    setStatus("Meal saved.");
+    markSaved();
+    setStatus("Meal saved successfully.");
   } catch (err) {
+    saveMealBtn.disabled = false;
+    saveMealBtn.textContent = "Save Meal";
     setStatus("Error: " + err.message);
   }
 });
