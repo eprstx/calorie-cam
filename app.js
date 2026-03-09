@@ -20,6 +20,9 @@ const mealNameEl = document.getElementById("mealName");
 const waterInputEl = document.getElementById("waterInput");
 const saveMealBtn = document.getElementById("saveMealBtn");
 
+const loadMealsBtn = document.getElementById("loadMealsBtn");
+const recentMealsEl = document.getElementById("recentMeals");
+
 let currentFile = null;
 let itemsData = [];
 let notesText = "";
@@ -148,6 +151,61 @@ function resetPhotoSelection() {
   setStatus("");
 }
 
+function formatDateTime(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}
+
+function renderRecentMeals(meals) {
+  recentMealsEl.innerHTML = "";
+
+  if (!Array.isArray(meals) || meals.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "notes";
+    empty.textContent = "No saved meals yet.";
+    recentMealsEl.appendChild(empty);
+    return;
+  }
+
+  meals.forEach((meal) => {
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const title = document.createElement("div");
+    title.className = "item-name";
+    title.textContent = meal.meal_name || "Untitled meal";
+
+    const time = document.createElement("div");
+    time.className = "item-portion";
+    time.textContent = formatDateTime(meal.saved_at);
+
+    const totals = document.createElement("div");
+    totals.style.opacity = "0.85";
+    totals.style.fontSize = "13px";
+    totals.style.marginTop = "6px";
+    totals.textContent =
+      `${Math.round(Number(meal.total_calories) || 0)} cal • ` +
+      `P ${Math.round(Number(meal.total_protein) || 0)}g • ` +
+      `F ${Math.round(Number(meal.total_fat) || 0)}g • ` +
+      `C ${Math.round(Number(meal.total_carbs) || 0)}g`;
+
+    const water = document.createElement("div");
+    water.style.opacity = "0.75";
+    water.style.fontSize = "13px";
+    water.style.marginTop = "6px";
+    water.textContent = `Water: ${Number(meal.water) || 0}`;
+
+    row.appendChild(title);
+    row.appendChild(time);
+    row.appendChild(totals);
+    row.appendChild(water);
+
+    recentMealsEl.appendChild(row);
+  });
+}
+
 photoEl.addEventListener("change", () => {
   const file = photoEl.files?.[0];
   if (!file) return;
@@ -251,5 +309,30 @@ saveMealBtn.addEventListener("click", async () => {
     saveMealBtn.disabled = false;
     saveMealBtn.textContent = "Save Meal";
     setStatus("Error: " + err.message);
+  }
+});
+
+loadMealsBtn.addEventListener("click", async () => {
+  loadMealsBtn.disabled = true;
+  loadMealsBtn.textContent = "Loading...";
+
+  try {
+    const resp = await fetch("/api/getMeals");
+    const data = await resp.json();
+
+    if (!resp.ok || !data.success) {
+      throw new Error(data?.error || "Could not load meals");
+    }
+
+    renderRecentMeals(data.meals || []);
+  } catch (err) {
+    recentMealsEl.innerHTML = "";
+    const errorBox = document.createElement("div");
+    errorBox.className = "notes";
+    errorBox.textContent = "Error loading meals: " + err.message;
+    recentMealsEl.appendChild(errorBox);
+  } finally {
+    loadMealsBtn.disabled = false;
+    loadMealsBtn.textContent = "Load meals";
   }
 });
