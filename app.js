@@ -1,8 +1,10 @@
 const photoEl = document.getElementById("photo");
 const imgEl = document.getElementById("img");
 const previewEl = document.getElementById("preview");
-const analyzeBtn = document.getElementById("analyze");
 const statusEl = document.getElementById("status");
+
+const confirmPhotoBtn = document.getElementById("confirmPhoto");
+const retakePhotoBtn = document.getElementById("retakePhoto");
 
 const prettyEl = document.getElementById("pretty");
 const itemsEl = document.getElementById("items");
@@ -138,6 +140,14 @@ function renderItems() {
   renderTotals();
 }
 
+function resetPhotoSelection() {
+  currentFile = null;
+  photoEl.value = "";
+  imgEl.src = "";
+  previewEl.classList.add("hidden");
+  setStatus("");
+}
+
 photoEl.addEventListener("change", () => {
   const file = photoEl.files?.[0];
   if (!file) return;
@@ -146,19 +156,23 @@ photoEl.addEventListener("change", () => {
   imgEl.src = URL.createObjectURL(file);
   previewEl.classList.remove("hidden");
 
-  analyzeBtn.disabled = false;
   prettyEl.classList.add("hidden");
   setStatus("");
   markUnsaved();
 });
 
+retakePhotoBtn.addEventListener("click", () => {
+  resetPhotoSelection();
+});
+
 mealNameEl.addEventListener("input", markUnsaved);
 waterInputEl.addEventListener("input", markUnsaved);
 
-analyzeBtn.addEventListener("click", async () => {
+confirmPhotoBtn.addEventListener("click", async () => {
   if (!currentFile) return;
 
-  analyzeBtn.disabled = true;
+  confirmPhotoBtn.disabled = true;
+  retakePhotoBtn.disabled = true;
   setStatus("Analyzing...");
 
   try {
@@ -193,7 +207,8 @@ analyzeBtn.addEventListener("click", async () => {
   } catch (err) {
     setStatus("Error: " + err.message);
   } finally {
-    analyzeBtn.disabled = false;
+    confirmPhotoBtn.disabled = false;
+    retakePhotoBtn.disabled = false;
   }
 });
 
