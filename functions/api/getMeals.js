@@ -8,6 +8,7 @@ export async function onRequestGet(context) {
         id,
         user_id,
         meal_name,
+        ingredients_summary,
         items_json,
         total_calories,
         total_protein,
