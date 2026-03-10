@@ -17,6 +17,7 @@ const totalFatEl = document.getElementById("totalFat");
 const totalCarbsEl = document.getElementById("totalCarbs");
 
 const mealNameEl = document.getElementById("mealName");
+const ingredientsInputEl = document.getElementById("ingredientsInput");
 const waterInputEl = document.getElementById("waterInput");
 const saveMealBtn = document.getElementById("saveMealBtn");
 
@@ -27,6 +28,7 @@ let currentFile = null;
 let itemsData = [];
 let notesText = "";
 let isSaved = false;
+let ingredientsManuallyEdited = false;
 
 function setStatus(text) {
   statusEl.textContent = text || "";
@@ -42,6 +44,19 @@ function markSaved() {
   isSaved = true;
   saveMealBtn.disabled = true;
   saveMealBtn.textContent = "Saved";
+}
+
+function buildIngredientsSummary(items) {
+  const names = (Array.isArray(items) ? items : [])
+    .map(item => String(item?.name || "").trim())
+    .filter(Boolean);
+
+  return names.join(", ");
+}
+
+function refreshIngredientsAuto() {
+  if (ingredientsManuallyEdited) return;
+  ingredientsInputEl.value = buildIngredientsSummary(itemsData);
 }
 
 function getTotals() {
@@ -86,6 +101,7 @@ function renderItems() {
     nameInput.placeholder = "Food name";
     nameInput.oninput = () => {
       itemsData[index].name = nameInput.value;
+      refreshIngredientsAuto();
       markUnsaved();
     };
 
@@ -141,6 +157,7 @@ function renderItems() {
   });
 
   renderTotals();
+  refreshIngredientsAuto();
 }
 
 function resetPhotoSelection() {
@@ -177,8 +194,13 @@ function renderRecentMeals(meals) {
     title.className = "item-name";
     title.textContent = meal.meal_name || "Untitled meal";
 
+    const ingredients = document.createElement("div");
+    ingredients.className = "item-portion";
+    ingredients.textContent = meal.ingredients_summary || "";
+
     const time = document.createElement("div");
     time.className = "item-portion";
+    time.style.marginTop = "4px";
     time.textContent = formatDateTime(meal.saved_at);
 
     const totals = document.createElement("div");
@@ -198,6 +220,7 @@ function renderRecentMeals(meals) {
     water.textContent = `Water: ${Number(meal.water) || 0}`;
 
     row.appendChild(title);
+    if (meal.ingredients_summary) row.appendChild(ingredients);
     row.appendChild(time);
     row.appendChild(totals);
     row.appendChild(water);
@@ -224,6 +247,12 @@ retakePhotoBtn.addEventListener("click", () => {
 });
 
 mealNameEl.addEventListener("input", markUnsaved);
+
+ingredientsInputEl.addEventListener("input", () => {
+  ingredientsManuallyEdited = true;
+  markUnsaved();
+});
+
 waterInputEl.addEventListener("input", markUnsaved);
 
 confirmPhotoBtn.addEventListener("click", async () => {
@@ -257,6 +286,9 @@ confirmPhotoBtn.addEventListener("click", async () => {
     notesText = data.notes || "";
     notesEl.textContent = notesText || "—";
 
+    ingredientsManuallyEdited = false;
+    ingredientsInputEl.value = buildIngredientsSummary(itemsData);
+
     prettyEl.classList.remove("hidden");
     renderItems();
     markUnsaved();
@@ -274,6 +306,8 @@ saveMealBtn.addEventListener("click", async () => {
   if (isSaved) return;
 
   const meal_name = (mealNameEl.value || "").trim() || "Untitled meal";
+  const ingredients_summary =
+    (ingredientsInputEl.value || "").trim() || buildIngredientsSummary(itemsData);
   const water = Number(waterInputEl.value) || 0;
   const totals = getTotals();
 
@@ -290,6 +324,7 @@ saveMealBtn.addEventListener("click", async () => {
       body: JSON.stringify({
         user_id: 1,
         meal_name,
+        ingredients_summary,
         items: itemsData,
         total_calories: totals.total_calories,
         total_protein: totals.total_protein,
