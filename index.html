@@ -10,7 +10,32 @@
   <main class="wrap">
     <h1>Food Snap</h1>
     <p class="sub">Take a food photo → get a rough calorie estimate.</p>
-    <p class="sub"><strong>Version: v10</strong></p>
+    <p class="sub"><strong>Version: v11</strong></p>
+
+    <section class="card">
+      <div class="row-between">
+        <h2 style="margin:0;">Account</h2>
+      </div>
+
+      <div id="authBox">
+        <div class="items-head">Email</div>
+        <input id="authEmail" class="input" type="email" placeholder="you@example.com" />
+
+        <div class="divider"></div>
+
+        <div class="items-head">Password</div>
+        <input id="authPassword" class="input" type="password" placeholder="At least 6 characters" />
+
+        <div class="divider"></div>
+
+        <div class="photo-actions">
+          <button id="registerBtn" class="btn primary">Sign up</button>
+          <button id="loginBtn" class="btn">Log in</button>
+        </div>
+      </div>
+
+      <div id="currentUserBox" class="notes hidden"></div>
+    </section>
 
     <section class="card">
       <label class="btn">
@@ -111,6 +136,6 @@
     </section>
   </main>
 
-  <script src="/app.js?v=10"></script>
+  <script src="/app.js?v=11"></script>
 </body>
 </html>
