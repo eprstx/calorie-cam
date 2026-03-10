@@ -49,11 +49,10 @@ function markSaved() {
 }
 
 function buildIngredientsSummary(items) {
-  const names = (Array.isArray(items) ? items : [])
+  return (Array.isArray(items) ? items : [])
     .map(item => String(item?.name || "").trim())
-    .filter(Boolean);
-
-  return names.join(", ");
+    .filter(Boolean)
+    .join(", ");
 }
 
 function refreshIngredientsAuto() {
@@ -64,20 +63,26 @@ function refreshIngredientsAuto() {
 function formatNowForInput() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  return [
+    d.getFullYear(),
+    "-",
+    pad(d.getMonth() + 1),
+    "-",
+    pad(d.getDate()),
+    "T",
+    pad(d.getHours()),
+    ":",
+    pad(d.getMinutes())
+  ].join("");
 }
 
 function defaultMealNameFromDateTime(localDateTimeValue) {
   if (!localDateTimeValue) return "Snack";
 
   const d = new Date(localDateTimeValue);
-  const hour = d.getHours();
+  if (Number.isNaN(d.getTime())) return "Snack";
 
+  const hour = d.getHours();
   if (hour >= 5 && hour < 11) return "Breakfast";
   if (hour >= 11 && hour < 15) return "Lunch";
   if (hour >= 17 && hour < 22) return "Dinner";
@@ -87,6 +92,12 @@ function defaultMealNameFromDateTime(localDateTimeValue) {
 function refreshMealNameAuto() {
   if (mealNameManuallyEdited) return;
   mealNameEl.value = defaultMealNameFromDateTime(consumedAtInputEl.value);
+}
+
+function forceFillTimeAndDefaultMealName() {
+  consumedAtInputEl.value = formatNowForInput();
+  mealNameManuallyEdited = false;
+  refreshMealNameAuto();
 }
 
 function getTotals() {
@@ -325,13 +336,7 @@ confirmPhotoBtn.addEventListener("click", async () => {
     notesEl.textContent = notesText || "—";
 
     ingredientsManuallyEdited = false;
-    mealNameManuallyEdited = false;
-
-    if (!consumedAtInputEl.value) {
-      consumedAtInputEl.value = formatNowForInput();
-    }
-
-    refreshMealNameAuto();
+    forceFillTimeAndDefaultMealName();
     ingredientsInputEl.value = buildIngredientsSummary(itemsData);
 
     prettyEl.classList.remove("hidden");
@@ -420,7 +425,4 @@ loadMealsBtn.addEventListener("click", async () => {
   }
 });
 
-if (!consumedAtInputEl.value) {
-  consumedAtInputEl.value = formatNowForInput();
-}
-refreshMealNameAuto();
+forceFillTimeAndDefaultMealName();
