@@ -10,7 +10,7 @@
   <main class="wrap">
     <h1>Food Snap</h1>
     <p class="sub">Take a food photo → get a rough calorie estimate.</p>
-    <p class="sub"><strong>Version: v9</strong></p>
+    <p class="sub"><strong>Version: v10</strong></p>
 
     <section class="card">
       <label class="btn">
@@ -65,8 +65,13 @@
 
         <div class="divider"></div>
 
+        <div class="items-head">Meal time</div>
+        <input id="consumedAtInput" class="input" type="datetime-local" />
+
+        <div class="divider"></div>
+
         <div class="items-head">Meal name</div>
-        <input id="mealName" class="input" placeholder="e.g. Breakfast, Lunch, Afternoon snack" />
+        <input id="mealName" class="input" placeholder="Auto-filled from time if left blank" />
 
         <div class="divider"></div>
 
@@ -106,6 +111,6 @@
     </section>
   </main>
 
-  <script src="/app.js?v=9"></script>
+  <script src="/app.js?v=10"></script>
 </body>
 </html>
