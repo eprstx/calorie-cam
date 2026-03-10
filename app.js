@@ -25,12 +25,20 @@ const saveMealBtn = document.getElementById("saveMealBtn");
 const loadMealsBtn = document.getElementById("loadMealsBtn");
 const recentMealsEl = document.getElementById("recentMeals");
 
+const authEmailEl = document.getElementById("authEmail");
+const authPasswordEl = document.getElementById("authPassword");
+const registerBtn = document.getElementById("registerBtn");
+const loginBtn = document.getElementById("loginBtn");
+const authBoxEl = document.getElementById("authBox");
+const currentUserBoxEl = document.getElementById("currentUserBox");
+
 let currentFile = null;
 let itemsData = [];
 let notesText = "";
 let isSaved = false;
 let ingredientsManuallyEdited = false;
 let mealNameManuallyEdited = false;
+let currentUser = null;
 
 function setStatus(text) {
   statusEl.textContent = text || "";
@@ -270,6 +278,35 @@ function renderRecentMeals(meals) {
   });
 }
 
+function renderCurrentUser() {
+  if (currentUser) {
+    authBoxEl.classList.add("hidden");
+    currentUserBoxEl.classList.remove("hidden");
+    currentUserBoxEl.textContent = `Logged in as ${currentUser.email}`;
+  } else {
+    authBoxEl.classList.remove("hidden");
+    currentUserBoxEl.classList.add("hidden");
+    currentUserBoxEl.textContent = "";
+  }
+}
+
+async function checkCurrentUser() {
+  try {
+    const resp = await fetch("/api/me");
+    const data = await resp.json();
+
+    if (resp.ok && data.success && data.logged_in && data.user) {
+      currentUser = data.user;
+    } else {
+      currentUser = null;
+    }
+  } catch {
+    currentUser = null;
+  }
+
+  renderCurrentUser();
+}
+
 photoEl.addEventListener("change", () => {
   const file = photoEl.files?.[0];
   if (!file) return;
@@ -303,6 +340,79 @@ consumedAtInputEl.addEventListener("input", () => {
 });
 
 waterInputEl.addEventListener("input", markUnsaved);
+
+registerBtn.addEventListener("click", async () => {
+  const email = String(authEmailEl.value || "").trim();
+  const password = String(authPasswordEl.value || "");
+
+  if (!email || !password) {
+    setStatus("Enter email and password.");
+    return;
+  }
+
+  registerBtn.disabled = true;
+  loginBtn.disabled = true;
+  setStatus("Creating account...");
+
+  try {
+    const resp = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.success) {
+      throw new Error(data?.error || "Registration failed");
+    }
+
+    setStatus("Account created. Now log in.");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  } finally {
+    registerBtn.disabled = false;
+    loginBtn.disabled = false;
+  }
+});
+
+loginBtn.addEventListener("click", async () => {
+  const email = String(authEmailEl.value || "").trim();
+  const password = String(authPasswordEl.value || "");
+
+  if (!email || !password) {
+    setStatus("Enter email and password.");
+    return;
+  }
+
+  registerBtn.disabled = true;
+  loginBtn.disabled = true;
+  setStatus("Logging in...");
+
+  try {
+    const resp = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.success) {
+      throw new Error(data?.error || "Login failed");
+    }
+
+    await checkCurrentUser();
+    setStatus("Logged in successfully.");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  } finally {
+    registerBtn.disabled = false;
+    loginBtn.disabled = false;
+  }
+});
 
 confirmPhotoBtn.addEventListener("click", async () => {
   if (!currentFile) return;
@@ -355,6 +465,11 @@ confirmPhotoBtn.addEventListener("click", async () => {
 saveMealBtn.addEventListener("click", async () => {
   if (isSaved) return;
 
+  if (!currentUser) {
+    setStatus("Please log in first.");
+    return;
+  }
+
   const consumed_at = consumedAtInputEl.value || formatNowForInput();
   const meal_name =
     (mealNameEl.value || "").trim() || defaultMealNameFromDateTime(consumed_at);
@@ -374,7 +489,7 @@ saveMealBtn.addEventListener("click", async () => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        user_id: 1,
+        user_id: currentUser.id,
         meal_name,
         consumed_at,
         ingredients_summary,
@@ -401,6 +516,11 @@ saveMealBtn.addEventListener("click", async () => {
 });
 
 loadMealsBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    setStatus("Please log in first.");
+    return;
+  }
+
   loadMealsBtn.disabled = true;
   loadMealsBtn.textContent = "Loading...";
 
@@ -426,3 +546,4 @@ loadMealsBtn.addEventListener("click", async () => {
 });
 
 forceFillTimeAndDefaultMealName();
+checkCurrentUser();
