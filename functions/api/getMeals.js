@@ -2,12 +2,12 @@ export async function onRequestGet(context) {
   try {
     const { env } = context;
 
-    // Temporary: test user_id = 1
     const stmt = env.DB.prepare(`
       SELECT
         id,
         user_id,
         meal_name,
+        consumed_at,
         ingredients_summary,
         items_json,
         total_calories,
