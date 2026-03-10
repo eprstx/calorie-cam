@@ -1,6 +1,25 @@
 export async function onRequestGet(context) {
   try {
-    const { env } = context;
+    const { request, env } = context;
+
+    const cookie = request.headers.get("Cookie") || "";
+    const match = cookie.match(/(?:^|;\s*)session_token=([^;]+)/);
+    const sessionToken = match ? match[1] : "";
+
+    if (!sessionToken) {
+      return json({ success: false, error: "Not logged in." }, 401);
+    }
+
+    const user = await env.DB.prepare(`
+      SELECT id
+      FROM users
+      WHERE session_token = ?
+      LIMIT 1
+    `).bind(sessionToken).first();
+
+    if (!user) {
+      return json({ success: false, error: "Invalid session." }, 401);
+    }
 
     const stmt = env.DB.prepare(`
       SELECT
@@ -23,22 +42,23 @@ export async function onRequestGet(context) {
       LIMIT 10
     `);
 
-    const result = await stmt.bind(1).all();
+    const result = await stmt.bind(user.id).all();
 
-    return new Response(JSON.stringify({
+    return json({
       success: true,
       meals: result.results || []
-    }), {
-      headers: { "Content-Type": "application/json" }
     });
-
   } catch (e) {
-    return new Response(JSON.stringify({
+    return json({
       success: false,
       error: e?.message || "Server error"
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    }, 500);
   }
+}
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  });
 }
