@@ -16,6 +16,7 @@ const totalProteinEl = document.getElementById("totalProtein");
 const totalFatEl = document.getElementById("totalFat");
 const totalCarbsEl = document.getElementById("totalCarbs");
 
+const consumedAtInputEl = document.getElementById("consumedAtInput");
 const mealNameEl = document.getElementById("mealName");
 const ingredientsInputEl = document.getElementById("ingredientsInput");
 const waterInputEl = document.getElementById("waterInput");
@@ -29,6 +30,7 @@ let itemsData = [];
 let notesText = "";
 let isSaved = false;
 let ingredientsManuallyEdited = false;
+let mealNameManuallyEdited = false;
 
 function setStatus(text) {
   statusEl.textContent = text || "";
@@ -57,6 +59,34 @@ function buildIngredientsSummary(items) {
 function refreshIngredientsAuto() {
   if (ingredientsManuallyEdited) return;
   ingredientsInputEl.value = buildIngredientsSummary(itemsData);
+}
+
+function formatNowForInput() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function defaultMealNameFromDateTime(localDateTimeValue) {
+  if (!localDateTimeValue) return "Snack";
+
+  const d = new Date(localDateTimeValue);
+  const hour = d.getHours();
+
+  if (hour >= 5 && hour < 11) return "Breakfast";
+  if (hour >= 11 && hour < 15) return "Lunch";
+  if (hour >= 17 && hour < 22) return "Dinner";
+  return "Snack";
+}
+
+function refreshMealNameAuto() {
+  if (mealNameManuallyEdited) return;
+  mealNameEl.value = defaultMealNameFromDateTime(consumedAtInputEl.value);
 }
 
 function getTotals() {
@@ -201,7 +231,7 @@ function renderRecentMeals(meals) {
     const time = document.createElement("div");
     time.className = "item-portion";
     time.style.marginTop = "4px";
-    time.textContent = formatDateTime(meal.saved_at);
+    time.textContent = formatDateTime(meal.consumed_at || meal.saved_at);
 
     const totals = document.createElement("div");
     totals.style.opacity = "0.85";
@@ -246,10 +276,18 @@ retakePhotoBtn.addEventListener("click", () => {
   resetPhotoSelection();
 });
 
-mealNameEl.addEventListener("input", markUnsaved);
+mealNameEl.addEventListener("input", () => {
+  mealNameManuallyEdited = true;
+  markUnsaved();
+});
 
 ingredientsInputEl.addEventListener("input", () => {
   ingredientsManuallyEdited = true;
+  markUnsaved();
+});
+
+consumedAtInputEl.addEventListener("input", () => {
+  refreshMealNameAuto();
   markUnsaved();
 });
 
@@ -287,6 +325,13 @@ confirmPhotoBtn.addEventListener("click", async () => {
     notesEl.textContent = notesText || "—";
 
     ingredientsManuallyEdited = false;
+    mealNameManuallyEdited = false;
+
+    if (!consumedAtInputEl.value) {
+      consumedAtInputEl.value = formatNowForInput();
+    }
+
+    refreshMealNameAuto();
     ingredientsInputEl.value = buildIngredientsSummary(itemsData);
 
     prettyEl.classList.remove("hidden");
@@ -305,7 +350,9 @@ confirmPhotoBtn.addEventListener("click", async () => {
 saveMealBtn.addEventListener("click", async () => {
   if (isSaved) return;
 
-  const meal_name = (mealNameEl.value || "").trim() || "Untitled meal";
+  const consumed_at = consumedAtInputEl.value || formatNowForInput();
+  const meal_name =
+    (mealNameEl.value || "").trim() || defaultMealNameFromDateTime(consumed_at);
   const ingredients_summary =
     (ingredientsInputEl.value || "").trim() || buildIngredientsSummary(itemsData);
   const water = Number(waterInputEl.value) || 0;
@@ -324,6 +371,7 @@ saveMealBtn.addEventListener("click", async () => {
       body: JSON.stringify({
         user_id: 1,
         meal_name,
+        consumed_at,
         ingredients_summary,
         items: itemsData,
         total_calories: totals.total_calories,
@@ -371,3 +419,8 @@ loadMealsBtn.addEventListener("click", async () => {
     loadMealsBtn.textContent = "Load meals";
   }
 });
+
+if (!consumedAtInputEl.value) {
+  consumedAtInputEl.value = formatNowForInput();
+}
+refreshMealNameAuto();
