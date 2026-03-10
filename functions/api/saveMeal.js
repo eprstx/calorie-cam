@@ -6,6 +6,7 @@ export async function onRequestPost(context) {
     const {
       user_id,
       meal_name,
+      consumed_at,
       ingredients_summary,
       items,
       total_calories,
@@ -20,6 +21,7 @@ export async function onRequestPost(context) {
       INSERT INTO food_entries (
         user_id,
         meal_name,
+        consumed_at,
         ingredients_summary,
         items_json,
         total_calories,
@@ -29,12 +31,13 @@ export async function onRequestPost(context) {
         water,
         notes
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     await stmt.bind(
       user_id,
       meal_name || "",
+      consumed_at || null,
       ingredients_summary || "",
       JSON.stringify(items || []),
       total_calories || 0,
