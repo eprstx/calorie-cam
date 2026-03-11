@@ -31,6 +31,8 @@ const registerBtn = document.getElementById("registerBtn");
 const loginBtn = document.getElementById("loginBtn");
 const authBoxEl = document.getElementById("authBox");
 const currentUserBoxEl = document.getElementById("currentUserBox");
+const logoutWrapEl = document.getElementById("logoutWrap");
+const logoutBtn = document.getElementById("logoutBtn");
 
 let currentFile = null;
 let itemsData = [];
@@ -278,14 +280,20 @@ function renderRecentMeals(meals) {
   });
 }
 
+function clearRecentMeals() {
+  recentMealsEl.innerHTML = "";
+}
+
 function renderCurrentUser() {
   if (currentUser) {
     authBoxEl.classList.add("hidden");
     currentUserBoxEl.classList.remove("hidden");
+    logoutWrapEl.classList.remove("hidden");
     currentUserBoxEl.textContent = `Logged in as ${currentUser.email}`;
   } else {
     authBoxEl.classList.remove("hidden");
     currentUserBoxEl.classList.add("hidden");
+    logoutWrapEl.classList.add("hidden");
     currentUserBoxEl.textContent = "";
   }
 }
@@ -411,6 +419,31 @@ loginBtn.addEventListener("click", async () => {
   } finally {
     registerBtn.disabled = false;
     loginBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  logoutBtn.disabled = true;
+  setStatus("Logging out...");
+
+  try {
+    const resp = await fetch("/api/logout", {
+      method: "POST"
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.success) {
+      throw new Error(data?.error || "Logout failed");
+    }
+
+    currentUser = null;
+    renderCurrentUser();
+    clearRecentMeals();
+    setStatus("Logged out successfully.");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  } finally {
+    logoutBtn.disabled = false;
   }
 });
 
