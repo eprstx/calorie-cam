@@ -46,8 +46,38 @@ let ingredientsManuallyEdited = false;
 let mealNameManuallyEdited = false;
 let currentUser = null;
 
+const ANON_SCAN_LIMIT = 3;
+const ANON_SCAN_KEY = "foodsnap_anon_scans_used";
+
 function setStatus(text) {
   statusEl.textContent = text || "";
+}
+
+function getAnonScansUsed() {
+  return Number(localStorage.getItem(ANON_SCAN_KEY) || "0");
+}
+
+function setAnonScansUsed(value) {
+  localStorage.setItem(ANON_SCAN_KEY, String(value));
+}
+
+function incrementAnonScansUsed() {
+  const next = getAnonScansUsed() + 1;
+  setAnonScansUsed(next);
+  return next;
+}
+
+function remainingAnonScans() {
+  return Math.max(0, ANON_SCAN_LIMIT - getAnonScansUsed());
+}
+
+function canAnalyzeNow() {
+  if (currentUser) return true;
+  return getAnonScansUsed() < ANON_SCAN_LIMIT;
+}
+
+function anonLimitMessage() {
+  return "You have used your 3 free scans. Create an account or log in to continue.";
 }
 
 function markUnsaved() {
@@ -315,7 +345,10 @@ function renderCurrentUser() {
     authBoxEl.classList.remove("hidden");
     currentUserBoxEl.classList.add("hidden");
     logoutWrapEl.classList.add("hidden");
+
+    const remaining = remainingAnonScans();
     currentUserBoxEl.textContent = "";
+    dailyTotalsBoxEl.textContent = "No daily totals loaded yet.";
   }
 }
 
@@ -466,6 +499,11 @@ logoutBtn.addEventListener("click", async () => {
 confirmPhotoBtn.addEventListener("click", async () => {
   if (!currentFile) return;
 
+  if (!canAnalyzeNow()) {
+    setStatus(anonLimitMessage());
+    return;
+  }
+
   confirmPhotoBtn.disabled = true;
   retakePhotoBtn.disabled = true;
   setStatus("Analyzing...");
@@ -502,7 +540,17 @@ confirmPhotoBtn.addEventListener("click", async () => {
     renderItems();
     markUnsaved();
 
-    setStatus("Done.");
+    if (!currentUser) {
+      const used = incrementAnonScansUsed();
+      const remaining = Math.max(0, ANON_SCAN_LIMIT - used);
+      if (remaining > 0) {
+        setStatus(`Done. ${remaining} free scan${remaining === 1 ? "" : "s"} left. Create an account to save meals.`);
+      } else {
+        setStatus("Done. You have used your 3 free scans. Create an account or log in to continue.");
+      }
+    } else {
+      setStatus("Done.");
+    }
   } catch (err) {
     setStatus("Error: " + err.message);
   } finally {
@@ -515,7 +563,7 @@ saveMealBtn.addEventListener("click", async () => {
   if (isSaved) return;
 
   if (!currentUser) {
-    setStatus("Please log in first.");
+    setStatus("Please log in first. Anonymous users can scan, but cannot save meals.");
     return;
   }
 
