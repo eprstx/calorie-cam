@@ -34,6 +34,10 @@ const currentUserBoxEl = document.getElementById("currentUserBox");
 const logoutWrapEl = document.getElementById("logoutWrap");
 const logoutBtn = document.getElementById("logoutBtn");
 
+const dailyDateInputEl = document.getElementById("dailyDateInput");
+const loadDailyTotalsBtn = document.getElementById("loadDailyTotalsBtn");
+const dailyTotalsBoxEl = document.getElementById("dailyTotalsBox");
+
 let currentFile = null;
 let itemsData = [];
 let notesText = "";
@@ -84,6 +88,12 @@ function formatNowForInput() {
     ":",
     pad(d.getMinutes())
   ].join("");
+}
+
+function formatTodayForDateInput() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function defaultMealNameFromDateTime(localDateTimeValue) {
@@ -284,6 +294,17 @@ function clearRecentMeals() {
   recentMealsEl.innerHTML = "";
 }
 
+function renderDailyTotals(totals, day) {
+  dailyTotalsBoxEl.innerHTML =
+    `<strong>${day}</strong><br>` +
+    `Meals: ${Math.round(Number(totals.meal_count) || 0)}<br>` +
+    `Calories: ${Math.round(Number(totals.total_calories) || 0)} cal<br>` +
+    `Protein: ${Math.round(Number(totals.total_protein) || 0)} g<br>` +
+    `Fat: ${Math.round(Number(totals.total_fat) || 0)} g<br>` +
+    `Carbs: ${Math.round(Number(totals.total_carbs) || 0)} g<br>` +
+    `Water: ${Number(totals.total_water) || 0}`;
+}
+
 function renderCurrentUser() {
   if (currentUser) {
     authBoxEl.classList.add("hidden");
@@ -365,9 +386,7 @@ registerBtn.addEventListener("click", async () => {
   try {
     const resp = await fetch("/api/register", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
 
@@ -401,9 +420,7 @@ loginBtn.addEventListener("click", async () => {
   try {
     const resp = await fetch("/api/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
 
@@ -427,11 +444,9 @@ logoutBtn.addEventListener("click", async () => {
   setStatus("Logging out...");
 
   try {
-    const resp = await fetch("/api/logout", {
-      method: "POST"
-    });
-
+    const resp = await fetch("/api/logout", { method: "POST" });
     const data = await resp.json();
+
     if (!resp.ok || !data.success) {
       throw new Error(data?.error || "Logout failed");
     }
@@ -439,6 +454,7 @@ logoutBtn.addEventListener("click", async () => {
     currentUser = null;
     renderCurrentUser();
     clearRecentMeals();
+    dailyTotalsBoxEl.textContent = "No daily totals loaded yet.";
     setStatus("Logged out successfully.");
   } catch (err) {
     setStatus("Error: " + err.message);
@@ -518,9 +534,7 @@ saveMealBtn.addEventListener("click", async () => {
   try {
     const resp = await fetch("/api/saveMeal", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: currentUser.id,
         meal_name,
@@ -578,5 +592,38 @@ loadMealsBtn.addEventListener("click", async () => {
   }
 });
 
+loadDailyTotalsBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    setStatus("Please log in first.");
+    return;
+  }
+
+  const day = String(dailyDateInputEl.value || "").trim();
+  if (!day) {
+    setStatus("Choose a date first.");
+    return;
+  }
+
+  loadDailyTotalsBtn.disabled = true;
+  loadDailyTotalsBtn.textContent = "Loading...";
+
+  try {
+    const resp = await fetch(`/api/getDailyTotals?day=${encodeURIComponent(day)}`);
+    const data = await resp.json();
+
+    if (!resp.ok || !data.success) {
+      throw new Error(data?.error || "Could not load daily totals");
+    }
+
+    renderDailyTotals(data.totals || {}, data.day || day);
+  } catch (err) {
+    dailyTotalsBoxEl.textContent = "Error loading daily totals: " + err.message;
+  } finally {
+    loadDailyTotalsBtn.disabled = false;
+    loadDailyTotalsBtn.textContent = "Load daily totals";
+  }
+});
+
 forceFillTimeAndDefaultMealName();
+dailyDateInputEl.value = formatTodayForDateInput();
 checkCurrentUser();
